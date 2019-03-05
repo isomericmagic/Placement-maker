@@ -1,0 +1,51 @@
+#define function to write SQL statement(s)
+def placement_maker(placement_id, placement_name, placement_selector):
+	#create / open file:
+	sql_file = open("sql_output.sql", "a")
+	#write sql statement
+	sql_file.write("DECLARE @MyCursor CURSOR;" + "\n")
+	sql_file.write("DECLARE @MyField INT;" + "\n")
+	sql_file.write("BEGIN" + "\n")
+	#Determine the publication id and eventually get the list of section ids in that publication from the placement ID provided:
+	sql_file.write("  SET @MyCursor = CURSOR FOR" + "\n")
+	sql_file.write("  SELECT PublicationSectionID" + "\n")
+	sql_file.write("  FROM PublicationSection" + "\n")
+	sql_file.write("  WHERE PublicationSection.PublicationID IN (" + "\n")
+	sql_file.write("    SELECT ps.PublicationID" + "\n")
+	sql_file.write("    FROM dbo.PublicationSection as ps" + "\n")
+	sql_file.write("    INNER JOIN dbo.Placement as p (nolock) on" + "\n")
+	sql_file.write("    ps.PublicationSectionID = p.PublicationSectionID" + "\n")
+	sql_file.write("    WHERE p.PlacementID = {}".format(placement_id) + "\n")
+	sql_file.write("  )" + "\n")
+	sql_file.write("" + "\n")
+	sql_file.write("  OPEN @MyCursor " + "\n")
+	sql_file.write("  FETCH NEXT FROM @MyCursor" + "\n")
+	sql_file.write("  INTO @MyField" + "\n")
+	sql_file.write("" + "\n")
+	sql_file.write("  WHILE @@FETCH_STATUS = 0" + "\n")
+	sql_file.write("  BEGIN" + "\n")
+    #Iterate over each section ID and insert a new placement into the placement table using the provided placement id as a reference
+	sql_file.write("    INSERT INTO dbo.Placement (" + "\n")
+	sql_file.write("      PublicationSectionID, PlacementTypeID, IsActive, PlacementRenderTemplateID, EmptyWeight, AdDeviceTypeID," + "\n")
+	sql_file.write("      ArticleRenderTemplateID, Priority, Name, DateCreated, IsPreviewable, IsDeleted, Location, EnableVideo, Position," + "\n")
+	sql_file.write("      RenderSelector, InjectionMode, IsInfiniteScroll, MonitorNetworkStatus, AdVideoDeviceTypeID" + "\n")
+	sql_file.write("      )" + "\n")
+	sql_file.write("      SELECT  @MyField, PlacementTypeID, IsActive, PlacementRenderTemplateID, EmptyWeight, AdDeviceTypeID," + "\n")
+	sql_file.write("      ArticleRenderTemplateID, Priority, '{}', DateCreated, IsPreviewable, IsDeleted, Location, EnableVideo, Position,".format(placement_name) + "\n")
+	sql_file.write("      '{}', InjectionMode, IsInfiniteScroll, MonitorNetworkStatus, AdVideoDeviceTypeID".format(placement_selector) + "\n")
+	sql_file.write("      FROM    dbo.Placement" + "\n")
+	sql_file.write("      WHERE   PlacementID = {};".format(placement_id) + "\n")
+	sql_file.write("    FETCH NEXT FROM @MyCursor" + "\n")
+	sql_file.write("    INTO @MyField " + "\n")
+	sql_file.write("  End;" + "\n")
+	sql_file.write("" + "\n")
+	sql_file.write("  CLOSE @MyCursor;" + "\n")
+	sql_file.write("  DEALLOCATE @MyCursor;" + "\n")
+	sql_file.write("END;" + "\n")
+	sql_file.write("--End Current Statement" + "\n")
+	#close file
+	sql_file.close()
+
+
+#call function to generate SQL file
+placement_maker(1028855, 'Test chicagotribune.com Other SF', 'div.testnativo')
